@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Tarefas Moderno</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Variáveis CSS para cores */
+        :root {
+            --primary-color: #4CAF50; /* Verde vibrante */
+            --primary-dark: #388E3C;
+            --secondary-color: #2196F3; /* Azul para destaque */
+            --accent-color: #FFC107; /* Amarelo para alertas/edição */
+            --background-light: #F0F2F5;
+            --background-medium: #E0E7EE;
+            --surface-color: #FFFFFF;
+            --text-dark: #333333;
+            --text-medium: #666666;
+            --text-light: #999999;
+            --border-color: #DDDDDD;
+            --shadow-light: rgba(0, 0, 0, 0.1);
+            --shadow-medium: rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif; /* Fonte mais moderna */
+            background-color: var(--background-light);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 20px;
+            box-sizing: border-box;
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            background-color: var(--surface-color);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px var(--shadow-medium);
+            width: 100%;
+            max-width: 1400px; /* Ainda mais largo */
+            margin-top: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-dark);
+            margin-bottom: 40px;
+            font-size: 2.8em;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .input-section, .filter-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            background-color: var(--background-medium);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: inset 0 2px 5px var(--shadow-light);
+        }
+
+        .input-section label, .filter-section label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .input-section input[type="text"],
+        .input-section input[type="date"],
+        .input-section textarea,
+        .input-section select,
+        .filter-section select {
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1.05em;
+            width: 100%;
+            box-sizing: border-box;
+            background-color: var(--surface-color);
+            transition: all 0.3s ease;
+        }
+
+        .input-section input[type="text"]:focus,
+        .input-section input[type="date"]:focus,
+        .input-section textarea:focus,
+        .input-section select:focus,
+        .filter-section select:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+            outline: none;
+        }
+
+        .input-section textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .input-section button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.15em;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            width: 100%;
+            grid-column: span var(--button-span, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .input-section button i {
+            font-size: 1.2em;
+        }
+
+        .input-section button:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px var(--shadow-light);
+        }
+
+        /* Colunas de Tarefas */
+        .task-columns {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Colunas mais flexíveis */
+            gap: 25px;
+        }
+
+        .task-column {
+            background-color: var(--background-medium);
+            border-radius: 12px;
+            padding: 20px 25px;
+            box-shadow: 0 5px 15px var(--shadow-light);
+            min-height: 350px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color); /* Borda sutil */
+        }
+
+        .task-column h2 {
+            text-align: center;
+            color: var(--secondary-color);
+            margin-bottom: 25px;
+            font-size: 2em;
+            font-weight: 600;
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .task-list {
+            list-style: none;
+            padding: 0;
+            min-height: 100px;
+            flex-grow: 1; /* Para que a lista ocupe o espaço restante */
+        }
+
+        .task-item {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            padding: 18px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: grab;
+            position: relative; /* Para posicionar o editor */
+        }
+
+        .task-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
+        }
+
+        .task-item.dragging {
+            opacity: 0.6;
+            border: 2px dashed var(--secondary-color);
+            background-color: var(--background-light);
+        }
+
+        .task-item.completed {
+            background-color: #E8F5E9; /* Verde muito claro */
+            text-decoration: line-through;
+            color: var(--text-light);
+            border-color: #A5D6A7;
+        }
+        
+        .task-item.completed .status-tag {
+            background-color: var(--primary-color); /* Mantém a cor original ou ajusta para um tone mais claro */
+        }
+
+        .task-item.overdue { /* Estilo para tarefas vencidas */
+            background-color: #FFEBEE; /* Vermelho muito claro */
+            border-color: #EF9A9A; /* Borda vermelha mais escura */
+            box-shadow: 0 4px 10px rgba(239, 83, 80, 0.2); /* Sombra avermelhada */
+        }
+
+        .task-item.overdue .status-tag {
+            background-color: #EF5350; /* Vermelho vibrante para a tag */
+        }
+
+        .task-item strong {
+            font-size: 1.2em;
+            color: var(--text-dark);
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .task-item .task-details {
+            font-size: 0.95em;
+            color: var(--text-medium);
+        }
+
+        .task-item .status-tag {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: white;
+            margin-right: 8px;
+            margin-top: 5px; /* Espaçamento da tag */
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Cores para os status com contraste */
+        .status-tag.a-fazer { background-color: #78909C; } /* Azul acinzentado */
+        .status-tag.em-andamento { background-color: #1976D2; } /* Azul mais escuro */
+        .status-tag.concluido { background-color: #4CAF50; } /* Verde principal */
+
+        .task-item .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: flex-end;
+        }
+
+        .task-item .actions button {
+            background-color: var(--text-light);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .task-item .actions button i {
+            font-size: 1em;
+        }
+
+        .task-item .actions button.complete-btn {
+            background-color: var(--primary-color);
+        }
+
+        .task-item .actions button.delete-btn {
+            background-color: #EF5350; /* Vermelho mais vibrante */
+        }
+
+        .task-item .actions button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .task-item .actions button.complete-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .task-item .actions button.delete-btn:hover {
+            background-color: #D32F2F;
+        }
+
+        /* Drag and Drop Feedback */
+        .task-list.over {
+            background-color: rgba(33, 150, 243, 0.1); /* Azul claro transparente */
+            border: 2px dashed var(--secondary-color);
+            border-radius: 12px;
+        }
+
+        /* Editor de tarefa (Modificado para um pop-up/modal dentro do item) */
+        .task-editor {
+            display: none; /* Escondido por padrão */
+            flex-direction: column;
+            gap: 12px;
+            padding: 15px;
+            background-color: var(--surface-color);
+            border: 1px solid var(--secondary-color);
+            border-radius: 10px;
+            margin-top: 10px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .task-editor input[type="text"],
+        .task-editor input[type="date"],
+        .task-editor textarea,
+        .task-editor select {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.95em;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .task-editor .editor-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .task-editor .editor-actions button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+
+        .task-editor .editor-actions button.save-btn {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .task-editor .editor-actions button.save-btn:hover {
+            background-color: #1565C0;
+        }
+
+        .task-editor .editor-actions button.cancel-btn {
+            background-color: var(--text-light);
+            color: white;
+        }
+
+        .task-editor .editor-actions button.cancel-btn:hover {
+            background-color: #78909C;
+        }
+
+        /* Responsividade */
+        @media (max-width: 1200px) {
+            .task-columns {
+                grid-template-columns: repeat(2, 1fr); /* Duas colunas em telas médias */
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                margin: 10px; /* Margem menor no corpo em telas pequenas */
+            }
+            .task-columns {
+                grid-template-columns: 1fr; /* Uma coluna em telas pequenas */
+            }
+            .input-section, .filter-section {
+                grid-template-columns: 1fr; /* Uma coluna para inputs e filtros */
+                padding: 15px; /* Padding menor */
+                gap: 15px; /* Espaçamento menor */
+            }
+            .input-section button {
+                grid-column: 1 / -1; /* Garante que o botão ocupe toda a largura */
+                font-size: 1em; /* Fonte ligeiramente menor */
+                padding: 12px 20px; /* Padding ajustado */
+            }
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            h1 {
+                font-size: 2em; /* Título menor */
+                margin-bottom: 25px; /* Margem ajustada */
+            }
+            .task-column {
+                padding: 15px; /* Padding menor nas colunas */
+            }
+            .task-column h2 {
+                font-size: 1.6em; /* Título da coluna menor */
+                margin-bottom: 15px;
+            }
+            .task-item {
+                padding: 15px; /* Padding menor nos itens */
+                font-size: 0.9em; /* Texto um pouco menor */
+            }
+            .task-item strong {
+                font-size: 1.1em; /* Título da tarefa menor */
+            }
+            .task-item .status-tag {
+                font-size: 0.8em; /* Tag menor */
+                padding: 4px 8px;
+            }
+            .task-item .actions button {
+                padding: 8px 12px; /* Botões menores */
+                font-size: 0.85em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+                margin: 5px;
+            }
+            h1 {
+                font-size: 1.8em;
+                margin-bottom: 20px;
+            }
+            .input-section, .filter-section {
+                padding: 10px;
+                gap: 10px;
+            }
+            .input-section input[type="text"],
+            .input-section input[type="date"],
+            .input-section textarea,
+            .input-section select,
+            .filter-section select {
+                padding: 10px;
+                font-size: 0.95em;
+            }
+            .input-section button {
+                padding: 10px 15px;
+                font-size: 0.95em;
+            }
+            .task-item {
+                padding: 12px;
+                gap: 8px;
+            }
+            .task-item strong {
+                font-size: 1em;
+            }
+            .task-item .task-details {
+                font-size: 0.85em;
+            }
+            .task-item .status-tag {
+                font-size: 0.75em;
+                padding: 3px 6px;
+            }
+            .task-item .actions {
+                flex-direction: column; /* Botões de ação empilhados em telas muito pequenas */
+                gap: 8px;
+            }
+            .task-item .actions button {
+                width: 100%;
+                justify-content: center;
+            }
+            .task-editor input,
+            .task-editor select,
+            .task-editor textarea {
+                font-size: 0.9em;
+                padding: 8px;
+            }
+            .task-editor .editor-actions button {
+                padding: 8px 15px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gerenciador de Tarefas</h1>
+
+        <div class="input-section">
+            <input type="text" id="taskTitleInput" placeholder="Título da Tarefa" required>
+            <input type="date" id="taskDueDateInput" title="Data de Entrega">
+            <select id="taskResponsibleInput"> 
+                <option value="">Selecione o Responsável</option>
+                <option value="Marco Túlio">Marco Túlio</option>
+                <option value="Venâncio Lucindo">Venâncio Lucindo</option>
+                <option value="Sara Raíne">Sara Raíne</option>
+                <option value="Divino Acácio">Divino Acácio</option>
+            </select>
+            <textarea id="taskNotesInput" placeholder="Observações..."></textarea>
+            <select id="taskSectorInput">
+                <option value="financeiro">Financeiro</option>
+                <option value="administrativo-geral">ADMINISTRATIVO GERAL</option>
+                <option value="estoque">Estoque</option>
+                <option value="estoque-pecas">ESTOQUE PEÇAS</option>
+            </select>
+            <select id="taskStatusInput">
+                <option value="a-fazer">A Fazer</option>
+                <option value="em-andamento">Em Andamento</option>
+                <option value="concluido">Concluído</option>
+            </select>
+            <button id="addTaskButton" style="grid-column: 1 / -1;"><i class="fas fa-plus-circle"></i> Adicionar Tarefa</button>
+        </div>
+
+        <div class="filter-section">
+            <select id="filterStatus">
+                <option value="">Filtrar por Status (Todos)</option>
+                <option value="a-fazer">A Fazer</option>
+                <option value="em-andamento">Em Andamento</option>
+                <option value="concluido">Concluído</option>
+                <option value="vencidas">Vencidas</option> 
+            </select>
+            <select id="filterResponsible">
+                <option value="">Filtrar por Responsável (Todos)</option>
+            </select>
+            <select id="filterSector">
+                <option value="">Filtrar por Setor (Todos)</option>
+                <option value="financeiro">Financeiro</option>
+                <option value="administrativo-geral">ADMINISTRATIVO GERAL</option>
+                <option value="estoque">Estoque</option>
+                <option value="estoque-pecas">ESTOQUE PEÇAS</option>
+            </select>
+        </div>
+
+        <div class="task-columns">
+            <div class="task-column" id="column-financeiro" data-sector="financeiro">
+                <h2>Financeiro</h2>
+                <ul class="task-list"></ul>
+            </div>
+            <div class="task-column" id="column-administrativo-geral" data-sector="administrativo-geral">
+                <h2>ADMINISTRATIVO GERAL</h2>
+                <ul class="task-list"></ul>
+            </div>
+            <div class="task-column" id="column-estoque" data-sector="estoque">
+                <h2>Estoque</h2>
+                <ul class="task-list"></ul>
+            </div>
+            <div class="task-column" id="column-estoque-pecas" data-sector="estoque-pecas">
+                <h2>ESTOQUE PEÇAS</h2>
+                <ul class="task-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis globais para o IndexedDB
+        const DB_NAME = 'taskManagerDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'tasks';
+        let db;
+
+        // Elementos do DOM - Inputs de adição
+        const taskTitleInput = document.getElementById('taskTitleInput');
+        const taskDueDateInput = document.getElementById('taskDueDateInput');
+        const taskResponsibleInput = document.getElementById('taskResponsibleInput');
+        const taskNotesInput = document.getElementById('taskNotesInput');
+        const taskSectorInput = document.getElementById('taskSectorInput');
+        const taskStatusInput = document.getElementById('taskStatusInput');
+        const addTaskButton = document.getElementById('addTaskButton');
+
+        // Elementos do DOM - Filtros
+        const filterStatus = document.getElementById('filterStatus');
+        const filterResponsible = document.getElementById('filterResponsible');
+        const filterSector = document.getElementById('filterSector');
+
+        // Elementos do DOM - Colunas de tarefas
+        const columnFinanceiro = document.getElementById('column-financeiro').querySelector('.task-list');
+        const columnAdministrativoGeral = document.getElementById('column-administrativo-geral').querySelector('.task-list');
+        const columnEstoque = document.getElementById('column-estoque').querySelector('.task-list');
+        const columnEstoquePecas = document.getElementById('column-estoque-pecas').querySelector('.task-list'); // Nova coluna
+
+        // Referência à tarefa sendo arrastada
+        let draggedTask = null;
+
+        // --- Funções de IndexedDB ---
+
+        // Função para abrir o banco de dados IndexedDB
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                        objectStore.createIndex('sector', 'sector', { unique: false });
+                        objectStore.createIndex('status', 'status', { unique: false });
+                        objectStore.createIndex('responsible', 'responsible', { unique: false }); // Novo índice para responsável
+                        objectStore.createIndex('completed', 'completed', { unique: false });
+                        objectStore.createIndex('dueDate', 'dueDate', { unique: false }); // Índice para data de entrega
+                        console.log('Object store created/upgraded.');
+                    }
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    console.log('IndexedDB opened successfully.');
+                    resolve(db);
+                };
+
+                request.onerror = (event) => {
+                    console.error('Error opening IndexedDB:', event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        // Função para adicionar uma tarefa ao IndexedDB
+        function addTaskDB(taskData) {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    reject('Database not open.');
+                    return;
+                }
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const task = {
+                    title: taskData.title,
+                    dueDate: taskData.dueDate,
+                    responsible: taskData.responsible,
+                    notes: taskData.notes,
+                    sector: taskData.sector,
+                    status: taskData.status,
+                    completed: taskData.status === 'concluido',
+                    createdAt: new Date().toISOString()
+                };
+                const request = store.add(task);
+
+                request.onsuccess = (event) => {
+                    console.log('Task added to DB:', task);
+                    resolve({ ...task, id: event.target.result });
+                };
+
+                request.onerror = (event) => {
+                    console.error('Error adding task to DB:', event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        // Função para carregar todas as tarefas do IndexedDB
+        function loadTasksDB() {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    reject('Database not open.');
+                    return;
+                }
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+
+                request.onsuccess = (event) => {
+                    console.log('Tasks loaded from DB:', event.target.result);
+                    resolve(event.target.result);
+                };
+
+                request.onerror = (event) => {
+                    console.error('Error loading tasks from DB:', event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        // Função para atualizar uma tarefa no IndexedDB
+        function updateTaskDB(task) {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    reject('Database not open.');
+                    return;
+                }
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put(task);
+
+                request.onsuccess = () => {
+                    console.log('Task updated in DB:', task);
+                    resolve();
+                };
+
+                request.onerror = (event) => {
+                    console.error('Error updating task in DB:', event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        // Função para deletar uma tarefa do IndexedDB
+        function deleteTaskDB(id) {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    reject('Database not open.');
+                    return;
+                }
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(id);
+
+                request.onsuccess = () => {
+                    console.log('Task deleted from DB:', id);
+                    resolve();
+                };
+
+                request.onerror = (event) => {
+                    console.error('Error deleting task from DB:', event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        // --- Funções de Manipulação do DOM e Lógica da Aplicação ---
+
+        // Mapeamento de status para texto de exibição
+        const statusMap = {
+            'a-fazer': 'A Fazer',
+            'em-andamento': 'Em Andamento',
+            'concluido': 'Concluído'
+        };
+
+        // Função para verificar se uma data está vencida
+        function isOverdue(dueDate) {
+            if (!dueDate) return false;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Zera a hora para comparar apenas a data
+            const taskDate = new Date(dueDate + 'T00:00:00'); // Adiciona T00:00:00 para garantir UTC, crucial para comparação
+            return taskDate < today;
+        }
+
+        // Função para criar o elemento da tarefa na lista
+        function createTaskElement(task) {
+            const li = document.createElement('li');
+            li.classList.add('task-item');
+            li.setAttribute('draggable', 'true');
+            li.dataset.id = task.id;
+
+            if (task.status === 'concluido') {
+                li.classList.add('completed');
+            } else {
+                li.classList.remove('completed');
+            }
+
+            // Adiciona classe 'overdue' se a tarefa não estiver concluída e a data estiver vencida
+            if (task.status !== 'concluido' && isOverdue(task.dueDate)) {
+                li.classList.add('overdue');
+            } else {
+                li.classList.remove('overdue');
+            }
+
+            const titleElement = document.createElement('strong');
+            titleElement.textContent = task.title;
+            titleElement.addEventListener('click', () => editTask(task.id));
+
+            const statusTag = document.createElement('span');
+            statusTag.classList.add('status-tag', task.status);
+            statusTag.textContent = statusMap[task.status] || task.status;
+
+            const detailsDiv = document.createElement('div');
+            detailsDiv.classList.add('task-details');
+            detailsDiv.innerHTML = `
+                ${task.dueDate ? `<span><i class="far fa-calendar-alt"></i> **Entrega:** ${formatDate(task.dueDate)}</span><br>` : ''}
+                ${task.responsible ? `<span><i class="fas fa-user"></i> **Responsável:** ${task.responsible}</span><br>` : ''}
+                ${task.notes ? `<span><i class="fas fa-clipboard"></i> **Obs.:** ${task.notes}</span>` : ''}
+            `;
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.classList.add('actions');
+
+            const toggleStatusButton = document.createElement('button');
+            toggleStatusButton.classList.add('complete-btn');
+            toggleStatusButton.innerHTML = task.status === 'concluido' ? '<i class="fas fa-undo-alt"></i> Desfazer' : '<i class="fas fa-check-circle"></i> Concluir';
+            toggleStatusButton.addEventListener('click', () => {
+                const newStatus = task.status === 'concluido' ? 'a-fazer' : 'concluido';
+                updateTaskStatus(task.id, newStatus);
+            });
+
+            const deleteButton = document.createElement('button');
+            deleteButton.classList.add('delete-btn');
+            deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i> Remover';
+            deleteButton.addEventListener('click', () => removeTask(task.id));
+
+            actionsDiv.appendChild(toggleStatusButton);
+            actionsDiv.appendChild(deleteButton);
+
+            li.appendChild(titleElement);
+            li.appendChild(statusTag);
+            li.appendChild(detailsDiv);
+            li.appendChild(actionsDiv);
+
+            li.addEventListener('dragstart', handleDragStart);
+            li.addEventListener('dragend', handleDragEnd);
+
+            // Adicionar evento para toque longo em dispositivos móveis para drag and drop
+            let touchдолгоPressTimeout;
+            li.addEventListener('touchstart', (e) => {
+                e.stopPropagation(); // Evita rolagem da página
+                touchдолгоPressTimeout = setTimeout(() => {
+                    li.classList.add('dragging');
+                    draggedTask = li;
+                    if (navigator.vibrate) {
+                        navigator.vibrate(50); // Feedback háptico
+                    }
+                }, 500); // 500ms para considerar como "toque longo"
+            }, { passive: false });
+
+            li.addEventListener('touchend', () => {
+                clearTimeout(touchдолгоPressTimeout);
+                if (draggedTask) {
+                    draggedTask.classList.remove('dragging');
+                    draggedTask = null;
+                }
+            });
+
+            li.addEventListener('touchcancel', () => {
+                clearTimeout(touchдолгоPressTimeout);
+                if (draggedTask) {
+                    draggedTask.classList.remove('dragging');
+                    draggedTask = null;
+                }
+            });
+
+            return li;
+        }
+
+        // Função para formatar a data para exibição (DD/MM/AAAA)
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const [year, month, day] = dateString.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        // Função para adicionar uma nova tarefa
+        async function addTask() {
+            const title = taskTitleInput.value.trim();
+            const dueDate = taskDueDateInput.value;
+            const responsible = taskResponsibleInput.value; // Pega o valor do select
+            const notes = taskNotesInput.value.trim();
+            const sector = taskSectorInput.value;
+            const status = taskStatusInput.value;
+
+            if (title === '') {
+                alert('Por favor, digite o título da tarefa.');
+                return;
+            }
+
+            const taskData = { title, dueDate, responsible, notes, sector, status };
+
+            try {
+                await addTaskDB(taskData);
+                
+                // Limpa os campos
+                taskTitleInput.value = '';
+                taskDueDateInput.value = '';
+                taskResponsibleInput.value = ''; // Limpa o select
+                taskNotesInput.value = '';
+                taskSectorInput.value = 'financeiro';
+                taskStatusInput.value = 'a-fazer';
+
+                renderTasks(); // Renderiza todas as tarefas (com filtros aplicados)
+            } catch (error) {
+                console.error('Failed to add task:', error);
+                alert('Erro ao adicionar tarefa.');
+            }
+        }
+
+        // Função para atualizar o status de uma tarefa
+        async function updateTaskStatus(id, newStatus) {
+            try {
+                const tasks = await loadTasksDB();
+                const task = tasks.find(t => t.id === id);
+                if (task) {
+                    task.status = newStatus;
+                    task.completed = newStatus === 'concluido';
+                    await updateTaskDB(task);
+                    renderTasks();
+                }
+            } catch (error) {
+                console.error('Failed to update task status:', error);
+                alert('Erro ao atualizar status da tarefa.');
+            }
+        }
+
+        // Função para remover uma tarefa
+        async function removeTask(id) {
+            if (!confirm('Tem certeza que deseja remover esta tarefa?')) {
+                return;
+            }
+            try {
+                await deleteTaskDB(id);
+                renderTasks(); // Recarrega para garantir que a lista esteja correta após a remoção
+            } catch (error) {
+                console.error('Failed to remove task:', error);
+                alert('Erro ao remover tarefa.');
+            }
+        }
+
+        // Função para iniciar a edição de uma tarefa
+        async function editTask(id) {
+            try {
+                const tasks = await loadTasksDB();
+                const taskToEdit = tasks.find(t => t.id === id);
+
+                if (taskToEdit) {
+                    const listItem = document.querySelector(`li[data-id="${id}"]`);
+                    if (!listItem) return;
+
+                    const existingEditor = listItem.querySelector('.task-editor');
+                    if (existingEditor) {
+                        existingEditor.remove();
+                    }
+
+                    // Esconde os elementos visuais da tarefa para exibir o editor
+                    listItem.querySelector('strong').style.display = 'none';
+                    listItem.querySelector('.status-tag').style.display = 'none';
+                    listItem.querySelector('.task-details').style.display = 'none';
+                    listItem.querySelector('.actions').style.display = 'none';
+
+                    const editorDiv = document.createElement('div');
+                    editorDiv.classList.add('task-editor');
+                    editorDiv.style.display = 'flex';
+
+                    // Opções de responsáveis para o editor
+                    const responsibleOptions = [
+                        "Marco Túlio", "Venâncio Lucindo", "Sara Raíne", "Divino Acácio"
+                    ].map(name => 
+                        `<option value="${name}" ${taskToEdit.responsible === name ? 'selected' : ''}>${name}</option>`
+                    ).join('');
+
+                    editorDiv.innerHTML = `
+                        <input type="text" id="editTitle-${id}" value="${taskToEdit.title}" placeholder="Título">
+                        <input type="date" id="editDueDate-${id}" value="${taskToEdit.dueDate || ''}" title="Data de Entrega">
+                        <select id="editResponsible-${id}">
+                            <option value="">Selecione o Responsável</option>
+                            ${responsibleOptions}
+                        </select>
+                        <textarea id="editNotes-${id}" placeholder="Observações...">${taskToEdit.notes || ''}</textarea>
+                        <select id="editSector-${id}">
+                            <option value="financeiro" ${taskToEdit.sector === 'financeiro' ? 'selected' : ''}>Financeiro</option>
+                            <option value="administrativo-geral" ${taskToEdit.sector === 'administrativo-geral' ? 'selected' : ''}>ADMINISTRATIVO GERAL</option>
+                            <option value="estoque" ${taskToEdit.sector === 'estoque' ? 'selected' : ''}>Estoque</option>
+                            <option value="estoque-pecas" ${taskToEdit.sector === 'estoque-pecas' ? 'selected' : ''}>ESTOQUE PEÇAS</option>
+                        </select>
+                        <select id="editStatus-${id}">
+                            <option value="a-fazer" ${taskToEdit.status === 'a-fazer' ? 'selected' : ''}>A Fazer</option>
+                            <option value="em-andamento" ${taskToEdit.status === 'em-andamento' ? 'selected' : ''}>Em Andamento</option>
+                            <option value="concluido" ${taskToEdit.status === 'concluido' ? 'selected' : ''}>Concluído</option>
+                        </select>
+                        <div class="editor-actions">
+                            <button class="save-btn"><i class="fas fa-save"></i> Salvar</button>
+                            <button class="cancel-btn"><i class="fas fa-times-circle"></i> Cancelar</button>
+                        </div>
+                    `;
+                    listItem.appendChild(editorDiv);
+
+                    // Adicionar listeners para os botões de salvar e cancelar
+                    editorDiv.querySelector('.save-btn').addEventListener('click', async () => {
+                        const updatedTitle = document.getElementById(`editTitle-${id}`).value.trim();
+                        const updatedDueDate = document.getElementById(`editDueDate-${id}`).value;
+                        const updatedResponsible = document.getElementById(`editResponsible-${id}`).value;
+                        const updatedNotes = document.getElementById(`editNotes-${id}`).value.trim();
+                        const updatedSector = document.getElementById(`editSector-${id}`).value;
+                        const updatedStatus = document.getElementById(`editStatus-${id}`).value;
+
+                        if (updatedTitle === '') {
+                            alert('O título da tarefa não pode ser vazio.');
+                            return;
+                        }
+
+                        const updatedTask = {
+                            ...taskToEdit,
+                            title: updatedTitle,
+                            dueDate: updatedDueDate,
+                            responsible: updatedResponsible,
+                            notes: updatedNotes,
+                            sector: updatedSector,
+                            status: updatedStatus,
+                            completed: updatedStatus === 'concluido'
+                        };
+
+                        await updateTaskDB(updatedTask);
+                        renderTasks(); // Atualiza a exibição das tarefas
+                    });
+
+                    editorDiv.querySelector('.cancel-btn').addEventListener('click', () => {
+                        editorDiv.remove();
+                        // Mostra os elementos originais da tarefa
+                        listItem.querySelector('strong').style.display = 'block';
+                        listItem.querySelector('.status-tag').style.display = 'inline-block';
+                        listItem.querySelector('.task-details').style.display = 'block';
+                        listItem.querySelector('.actions').style.display = 'flex';
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to edit task:', error);
+                alert('Erro ao carregar tarefa para edição.');
+            }
+        }
+
+        // Função para renderizar as tarefas nas colunas
+        async function renderTasks() {
+            // Limpa todas as colunas
+            columnFinanceiro.innerHTML = '';
+            columnAdministrativoGeral.innerHTML = '';
+            columnEstoque.innerHTML = '';
+            columnEstoquePecas.innerHTML = '';
+
+            try {
+                const tasks = await loadTasksDB();
+                const currentFilterStatus = filterStatus.value;
+                const currentFilterResponsible = filterResponsible.value;
+                const currentFilterSector = filterSector.value;
+
+                // Coleta todos os responsáveis únicos
+                const uniqueResponsibles = new Set();
+                tasks.forEach(task => {
+                    if (task.responsible) {
+                        uniqueResponsibles.add(task.responsible);
+                    }
+                });
+
+                // Preenche o filtro de responsáveis
+                filterResponsible.innerHTML = '<option value="">Filtrar por Responsável (Todos)</option>';
+                Array.from(uniqueResponsibles).sort().forEach(responsible => {
+                    const option = document.createElement('option');
+                    option.value = responsible;
+                    option.textContent = responsible;
+                    if (responsible === currentFilterResponsible) {
+                        option.selected = true;
+                    }
+                    filterResponsible.appendChild(option);
+                });
+
+                tasks.forEach(task => {
+                    let displayTask = true;
+
+                    // Aplica filtro por status
+                    if (currentFilterStatus && currentFilterStatus !== '') {
+                        if (currentFilterStatus === 'vencidas') {
+                            displayTask = displayTask && isOverdue(task.dueDate) && task.status !== 'concluido';
+                        } else {
+                            displayTask = displayTask && task.status === currentFilterStatus;
+                        }
+                    }
+
+                    // Aplica filtro por responsável
+                    if (currentFilterResponsible && currentFilterResponsible !== '') {
+                        displayTask = displayTask && task.responsible === currentFilterResponsible;
+                    }
+
+                    // Aplica filtro por setor
+                    if (currentFilterSector && currentFilterSector !== '') {
+                        displayTask = displayTask && task.sector === currentFilterSector;
+                    }
+
+                    if (displayTask) {
+                        const taskElement = createTaskElement(task);
+                        switch (task.sector) {
+                            case 'financeiro':
+                                columnFinanceiro.appendChild(taskElement);
+                                break;
+                            case 'administrativo-geral':
+                                columnAdministrativoGeral.appendChild(taskElement);
+                                break;
+                            case 'estoque':
+                                columnEstoque.appendChild(taskElement);
+                                break;
+                            case 'estoque-pecas': // Adiciona à nova coluna
+                                columnEstoquePecas.appendChild(taskElement);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to render tasks:', error);
+            }
+        }
+
+        // --- Funções de Drag and Drop (eventos de mouse e toque) ---
+
+        function handleDragStart(e) {
+            draggedTask = e.target;
+            e.dataTransfer.setData('text/plain', e.target.dataset.id);
+            setTimeout(() => {
+                e.target.classList.add('dragging');
+            }, 0);
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            draggedTask = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault(); // Necessário para permitir o drop
+            if (e.target.classList.contains('task-list') || e.target.closest('.task-list')) {
+                const currentList = e.target.classList.contains('task-list') ? e.target : e.target.closest('.task-list');
+                currentList.classList.add('over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            if (e.target.classList.contains('task-list') || e.target.closest('.task-list')) {
+                const currentList = e.target.classList.contains('task-list') ? e.target : e.target.closest('.task-list');
+                currentList.classList.remove('over');
+            }
+        }
+
+        async function handleDrop(e) {
+            e.preventDefault();
+            const currentList = e.target.classList.contains('task-list') ? e.target : e.target.closest('.task-list');
+            
+            if (!currentList) return; // Se não for uma lista de tarefas ou um item dentro dela
+
+            currentList.classList.remove('over');
+
+            if (draggedTask) {
+                const taskId = parseInt(draggedTask.dataset.id);
+                const newSector = currentList.closest('.task-column').dataset.sector;
+
+                try {
+                    const tasks = await loadTasksDB();
+                    const task = tasks.find(t => t.id === taskId);
+
+                    if (task && task.sector !== newSector) {
+                        task.sector = newSector;
+                        // Se mover para uma coluna que não seja "Concluído", remove o status de concluído se houver
+                        if (task.status === 'concluido' && newSector !== 'concluido-coluna-se-existir') { // Ajuste conforme a lógica de colunas concluídas
+                             task.status = 'a-fazer'; // Ou um status padrão
+                             task.completed = false;
+                        }
+                        await updateTaskDB(task);
+                        renderTasks(); // Renderiza novamente para refletir a mudança
+                    }
+                } catch (error) {
+                    console.error('Failed to move task:', error);
+                    alert('Erro ao mover tarefa.');
+                }
+            }
+        }
+
+        // --- Eventos de toque para simular Drag and Drop em mobile ---
+        let touchStartX, touchStartY;
+        let initialScrollPos;
+        let lastTouchMoveClientY;
+        let currentDroppableList = null;
+
+        function handleTouchStart(e) {
+            // Se o toque longo não iniciou um drag, não faz nada
+            if (!draggedTask) return;
+
+            e.preventDefault(); // Previne rolagem padrão enquanto arrasta
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            lastTouchMoveClientY = touch.clientY; // Inicializa
+            initialScrollPos = window.scrollY;
+
+            // Adiciona feedback visual
+            if (draggedTask) {
+                draggedTask.style.position = 'absolute';
+                draggedTask.style.zIndex = '1000';
+                draggedTask.style.width = draggedTask.offsetWidth + 'px';
+                draggedTask.style.height = draggedTask.offsetHeight + 'px';
+                draggedTask.style.pointerEvents = 'none'; // Para que toques passem para elementos abaixo
+                updateTouchPosition(touch);
+            }
+        }
+
+        function updateTouchPosition(touch) {
+            if (!draggedTask) return;
+
+            const clientX = touch.clientX;
+            const clientY = touch.clientY;
+
+            // Calcula a nova posição do elemento arrastado
+            const newX = clientX - (draggedTask.offsetWidth / 2);
+            const newY = clientY - (draggedTask.offsetHeight / 2) + window.scrollY;
+
+            draggedTask.style.left = `${newX}px`;
+            draggedTask.style.top = `${newY}px`;
+        }
+
+        function handleTouchMove(e) {
+            if (!draggedTask) return;
+
+            e.preventDefault();
+            const touch = e.touches[0];
+            updateTouchPosition(touch);
+
+            // Simular dragOver
+            const elementUnderFinger = document.elementFromPoint(touch.clientX, touch.clientY);
+            const targetList = elementUnderFinger ? elementUnderFinger.closest('.task-list') : null;
+
+            if (currentDroppableList && currentDroppableList !== targetList) {
+                currentDroppableList.classList.remove('over');
+            }
+
+            if (targetList && targetList !== currentDroppableList) {
+                targetList.classList.add('over');
+                currentDroppableList = targetList;
+            } else if (!targetList) {
+                currentDroppableList = null;
+            }
+
+            // Auto-scroll
+            const scrollSpeed = 20;
+            const scrollThreshold = 100; // Pixels from top/bottom to trigger scroll
+            const viewportHeight = window.innerHeight;
+
+            if (touch.clientY < scrollThreshold) {
+                window.scrollBy(0, -scrollSpeed);
+            } else if (touch.clientY > viewportHeight - scrollThreshold) {
+                window.scrollBy(0, scrollSpeed);
+            }
+        }
+
+        async function handleTouchEnd(e) {
+            if (!draggedTask) return;
+
+            // Resetar estilos
+            draggedTask.style.position = '';
+            draggedTask.style.zIndex = '';
+            draggedTask.style.width = '';
+            draggedTask.style.height = '';
+            draggedTask.style.left = '';
+            draggedTask.style.top = '';
+            draggedTask.style.pointerEvents = '';
+            draggedTask.classList.remove('dragging');
+
+            if (currentDroppableList) {
+                currentDroppableList.classList.remove('over');
+            }
+
+            const touch = e.changedTouches[0];
+            const elementUnderFinger = document.elementFromPoint(touch.clientX, touch.clientY);
+            const targetList = elementUnderFinger ? elementUnderFinger.closest('.task-list') : null;
+
+            if (targetList) {
+                const taskId = parseInt(draggedTask.dataset.id);
+                const newSector = targetList.closest('.task-column').dataset.sector;
+
+                try {
+                    const tasks = await loadTasksDB();
+                    const task = tasks.find(t => t.id === taskId);
+
+                    if (task && task.sector !== newSector) {
+                        task.sector = newSector;
+                        if (task.status === 'concluido' && newSector !== 'concluido-coluna-se-existir') {
+                             task.status = 'a-fazer';
+                             task.completed = false;
+                        }
+                        await updateTaskDB(task);
+                        renderTasks();
+                    }
+                } catch (error) {
+                    console.error('Failed to move task on touch end:', error);
+                    alert('Erro ao mover tarefa por toque.');
+                }
+            }
+            draggedTask = null;
+            currentDroppableList = null;
+        }
+
+        // Adicionar listeners para Drag and Drop e Toque
+        document.addEventListener('DOMContentLoaded', async () => {
+            await openDB(); // Abre o banco de dados quando o DOM estiver pronto
+            renderTasks(); // Renderiza as tarefas iniciais
+
+            addTaskButton.addEventListener('click', addTask);
+
+            // Adiciona listeners aos elementos que podem ser alvos de drop
+            document.querySelectorAll('.task-list').forEach(list => {
+                list.addEventListener('dragover', handleDragOver);
+                list.addEventListener('dragleave', handleDragLeave);
+                list.addEventListener('drop', handleDrop);
+
+                // Adicionar listeners de toque para simular drag and drop
+                list.addEventListener('touchmove', handleTouchMove, { passive: false });
+                list.addEventListener('touchend', handleTouchEnd);
+                list.addEventListener('touchcancel', handleTouchEnd);
+            });
+
+            // Adiciona listeners para os filtros
+            filterStatus.addEventListener('change', renderTasks);
+            filterResponsible.addEventListener('change', renderTasks);
+            filterSector.addEventListener('change', renderTasks);
+
+            // Listener global para o toque inicial (para a tarefa arrastada)
+            document.body.addEventListener('touchstart', handleTouchStart, { passive: false });
+
+        });
+    </script>
+</body>
+</html>
