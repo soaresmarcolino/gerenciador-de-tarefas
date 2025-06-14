@@ -202,7 +202,17 @@
         }
         
         .task-item.completed .status-tag {
-            background-color: var(--primary-color); /* Mantém a cor original ou ajusta para um tom mais claro */
+            background-color: var(--primary-color); /* Mantém a cor original ou ajusta para um tone mais claro */
+        }
+
+        .task-item.overdue { /* Estilo para tarefas vencidas */
+            background-color: #FFEBEE; /* Vermelho muito claro */
+            border-color: #EF9A9A; /* Borda vermelha mais escura */
+            box-shadow: 0 4px 10px rgba(239, 83, 80, 0.2); /* Sombra avermelhada */
+        }
+
+        .task-item.overdue .status-tag {
+            background-color: #EF5350; /* Vermelho vibrante para a tag */
         }
 
         .task-item strong {
@@ -388,12 +398,19 @@
         <div class="input-section">
             <input type="text" id="taskTitleInput" placeholder="Título da Tarefa" required>
             <input type="date" id="taskDueDateInput" title="Data de Entrega">
-            <input type="text" id="taskResponsibleInput" placeholder="Responsável">
+            <select id="taskResponsibleInput"> 
+                <option value="">Selecione o Responsável</option>
+                <option value="Marco Túlio">Marco Túlio</option>
+                <option value="Venâncio Lucindo">Venâncio Lucindo</option>
+                <option value="Sara Raíne">Sara Raíne</option>
+                <option value="Divino Acácio">Divino Acácio</option>
+            </select>
             <textarea id="taskNotesInput" placeholder="Observações..."></textarea>
             <select id="taskSectorInput">
                 <option value="financeiro">Financeiro</option>
-                <option value="adm">ADM</option>
+                <option value="administrativo-geral">ADMINISTRATIVO GERAL</option>
                 <option value="estoque">Estoque</option>
+                <option value="estoque-pecas">ESTOQUE PEÇAS</option>
             </select>
             <select id="taskStatusInput">
                 <option value="a-fazer">A Fazer</option>
@@ -409,9 +426,17 @@
                 <option value="a-fazer">A Fazer</option>
                 <option value="em-andamento">Em Andamento</option>
                 <option value="concluido">Concluído</option>
+                <option value="vencidas">Vencidas</option> 
             </select>
             <select id="filterResponsible">
                 <option value="">Filtrar por Responsável (Todos)</option>
+            </select>
+            <select id="filterSector">
+                <option value="">Filtrar por Setor (Todos)</option>
+                <option value="financeiro">Financeiro</option>
+                <option value="administrativo-geral">ADMINISTRATIVO GERAL</option>
+                <option value="estoque">Estoque</option>
+                <option value="estoque-pecas">ESTOQUE PEÇAS</option>
             </select>
         </div>
 
@@ -420,12 +445,16 @@
                 <h2>Financeiro</h2>
                 <ul class="task-list"></ul>
             </div>
-            <div class="task-column" id="column-adm" data-sector="adm">
-                <h2>ADM</h2>
+            <div class="task-column" id="column-administrativo-geral" data-sector="administrativo-geral">
+                <h2>ADMINISTRATIVO GERAL</h2>
                 <ul class="task-list"></ul>
             </div>
             <div class="task-column" id="column-estoque" data-sector="estoque">
                 <h2>Estoque</h2>
+                <ul class="task-list"></ul>
+            </div>
+            <div class="task-column" id="column-estoque-pecas" data-sector="estoque-pecas">
+                <h2>ESTOQUE PEÇAS</h2>
                 <ul class="task-list"></ul>
             </div>
         </div>
@@ -450,11 +479,13 @@
         // Elementos do DOM - Filtros
         const filterStatus = document.getElementById('filterStatus');
         const filterResponsible = document.getElementById('filterResponsible');
+        const filterSector = document.getElementById('filterSector');
 
         // Elementos do DOM - Colunas de tarefas
         const columnFinanceiro = document.getElementById('column-financeiro').querySelector('.task-list');
-        const columnAdm = document.getElementById('column-adm').querySelector('.task-list');
+        const columnAdministrativoGeral = document.getElementById('column-administrativo-geral').querySelector('.task-list');
         const columnEstoque = document.getElementById('column-estoque').querySelector('.task-list');
+        const columnEstoquePecas = document.getElementById('column-estoque-pecas').querySelector('.task-list'); // Nova coluna
 
         // Referência à tarefa sendo arrastada
         let draggedTask = null;
@@ -474,6 +505,7 @@
                         objectStore.createIndex('status', 'status', { unique: false });
                         objectStore.createIndex('responsible', 'responsible', { unique: false }); // Novo índice para responsável
                         objectStore.createIndex('completed', 'completed', { unique: false });
+                        objectStore.createIndex('dueDate', 'dueDate', { unique: false }); // Índice para data de entrega
                         console.log('Object store created/upgraded.');
                     }
                 };
@@ -602,6 +634,15 @@
             'concluido': 'Concluído'
         };
 
+        // Função para verificar se uma data está vencida
+        function isOverdue(dueDate) {
+            if (!dueDate) return false;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Zera a hora para comparar apenas a data
+            const taskDate = new Date(dueDate + 'T00:00:00'); // Adiciona T00:00:00 para garantir UTC, crucial para comparação
+            return taskDate < today;
+        }
+
         // Função para criar o elemento da tarefa na lista
         function createTaskElement(task) {
             const li = document.createElement('li');
@@ -613,6 +654,13 @@
                 li.classList.add('completed');
             } else {
                 li.classList.remove('completed');
+            }
+
+            // Adiciona classe 'overdue' se a tarefa não estiver concluída e a data estiver vencida
+            if (task.status !== 'concluido' && isOverdue(task.dueDate)) {
+                li.classList.add('overdue');
+            } else {
+                li.classList.remove('overdue');
             }
 
             const titleElement = document.createElement('strong');
@@ -665,7 +713,7 @@
         async function addTask() {
             const title = taskTitleInput.value.trim();
             const dueDate = taskDueDateInput.value;
-            const responsible = taskResponsibleInput.value.trim();
+            const responsible = taskResponsibleInput.value; // Pega o valor do select
             const notes = taskNotesInput.value.trim();
             const sector = taskSectorInput.value;
             const status = taskStatusInput.value;
@@ -683,7 +731,7 @@
                 // Limpa os campos
                 taskTitleInput.value = '';
                 taskDueDateInput.value = '';
-                taskResponsibleInput.value = '';
+                taskResponsibleInput.value = ''; // Limpa o select
                 taskNotesInput.value = '';
                 taskSectorInput.value = 'financeiro';
                 taskStatusInput.value = 'a-fazer';
@@ -751,15 +799,26 @@
                     editorDiv.classList.add('task-editor');
                     editorDiv.style.display = 'flex';
 
+                    // Opções de responsáveis para o editor
+                    const responsibleOptions = [
+                        "Marco Túlio", "Venâncio Lucindo", "Sara Raíne", "Divino Acácio"
+                    ].map(name => 
+                        `<option value="${name}" ${taskToEdit.responsible === name ? 'selected' : ''}>${name}</option>`
+                    ).join('');
+
                     editorDiv.innerHTML = `
                         <input type="text" id="editTitle-${id}" value="${taskToEdit.title}" placeholder="Título">
                         <input type="date" id="editDueDate-${id}" value="${taskToEdit.dueDate || ''}" title="Data de Entrega">
-                        <input type="text" id="editResponsible-${id}" value="${taskToEdit.responsible || ''}" placeholder="Responsável">
+                        <select id="editResponsible-${id}">
+                            <option value="">Selecione o Responsável</option>
+                            ${responsibleOptions}
+                        </select>
                         <textarea id="editNotes-${id}" placeholder="Observações...">${taskToEdit.notes || ''}</textarea>
                         <select id="editSector-${id}">
                             <option value="financeiro" ${taskToEdit.sector === 'financeiro' ? 'selected' : ''}>Financeiro</option>
-                            <option value="adm" ${taskToEdit.sector === 'adm' ? 'selected' : ''}>ADM</option>
+                            <option value="administrativo-geral" ${taskToEdit.sector === 'administrativo-geral' ? 'selected' : ''}>ADMINISTRATIVO GERAL</option>
                             <option value="estoque" ${taskToEdit.sector === 'estoque' ? 'selected' : ''}>Estoque</option>
+                            <option value="estoque-pecas" ${taskToEdit.sector === 'estoque-pecas' ? 'selected' : ''}>ESTOQUE PEÇAS</option>
                         </select>
                         <select id="editStatus-${id}">
                             <option value="a-fazer" ${taskToEdit.status === 'a-fazer' ? 'selected' : ''}>A Fazer</option>
@@ -778,26 +837,33 @@
 
                     saveButton.onclick = async () => {
                         const newTitle = editorDiv.querySelector(`#editTitle-${id}`).value.trim();
+                        const newDueDate = editorDiv.querySelector(`#editDueDate-${id}`).value;
+                        const newResponsible = editorDiv.querySelector(`#editResponsible-${id}`).value;
+                        const newNotes = editorDiv.querySelector(`#editNotes-${id}`).value.trim();
+                        const newSector = editorDiv.querySelector(`#editSector-${id}`).value;
+                        const newStatus = editorDiv.querySelector(`#editStatus-${id}`).value;
+
                         if (newTitle === '') {
                             alert('O título da tarefa não pode ser vazio.');
                             return;
                         }
 
                         taskToEdit.title = newTitle;
-                        taskToEdit.dueDate = editorDiv.querySelector(`#editDueDate-${id}`).value;
-                        taskToEdit.responsible = editorDiv.querySelector(`#editResponsible-${id}`).value.trim();
-                        taskToEdit.notes = editorDiv.querySelector(`#editNotes-${id}`).value.trim();
-                        taskToEdit.sector = editorDiv.querySelector(`#editSector-${id}`).value;
-                        taskToEdit.status = editorDiv.querySelector(`#editStatus-${id}`).value;
-                        taskToEdit.completed = taskToEdit.status === 'concluido';
+                        taskToEdit.dueDate = newDueDate;
+                        taskToEdit.responsible = newResponsible;
+                        taskToEdit.notes = newNotes;
+                        taskToEdit.sector = newSector;
+                        taskToEdit.status = newStatus;
+                        taskToEdit.completed = newStatus === 'concluido';
 
                         await updateTaskDB(taskToEdit);
-                        renderTasks(); // Recarrega para refletir as mudanças e ocultar o editor
+                        editorDiv.remove();
+                        renderTasks(); // Renderiza novamente para mostrar as alterações
                     };
 
                     cancelButton.onclick = () => {
                         editorDiv.remove();
-                        // Reexibe os elementos originais
+                        // Reexibe os elementos originais da tarefa
                         listItem.querySelector('strong').style.display = 'block';
                         listItem.querySelector('.status-tag').style.display = 'inline-block';
                         listItem.querySelector('.task-details').style.display = 'block';
@@ -805,84 +871,89 @@
                     };
                 }
             } catch (error) {
-                console.error('Failed to start task edit:', error);
-                alert('Erro ao iniciar edição da tarefa.');
+                console.error('Failed to edit task:', error);
+                alert('Erro ao editar tarefa.');
             }
         }
 
-        // Função auxiliar para obter o elemento da lista de tarefas com base no setor
-        function getTaskListElementBySector(sector) {
-            switch (sector) {
-                case 'financeiro': return columnFinanceiro;
-                case 'adm': return columnAdm;
-                case 'estoque': return columnEstoque;
-                default: return columnFinanceiro; // Padrão
-            }
-        }
+        // Função para renderizar todas as tarefas nas colunas
+        async function renderTasks() {
+            // Limpa todas as colunas
+            columnFinanceiro.innerHTML = '';
+            columnAdministrativoGeral.innerHTML = '';
+            columnEstoque.innerHTML = '';
+            columnEstoquePecas.innerHTML = ''; // Limpa a nova coluna
 
-        // Função para preencher o filtro de responsáveis
-        async function populateResponsibleFilter() {
             try {
                 const tasks = await loadTasksDB();
-                const responsibleNames = new Set();
+                const currentStatusFilter = filterStatus.value;
+                const currentResponsibleFilter = filterResponsible.value;
+                const currentSectorFilter = filterSector.value;
+
+                const uniqueResponsibles = new Set();
+
                 tasks.forEach(task => {
-                    if (task.responsible) {
-                        responsibleNames.add(task.responsible.toLowerCase()); // Armazena em minúsculas para evitar duplicatas de maiúsculas/minúsculas
+                    uniqueResponsibles.add(task.responsible);
+
+                    let shouldDisplay = true;
+
+                    // Filtro por status
+                    if (currentStatusFilter && currentStatusFilter !== '') {
+                        if (currentStatusFilter === 'vencidas') {
+                            shouldDisplay = shouldDisplay && isOverdue(task.dueDate) && task.status !== 'concluido';
+                        } else {
+                            shouldDisplay = shouldDisplay && (task.status === currentStatusFilter);
+                        }
+                    }
+
+                    // Filtro por responsável
+                    if (currentResponsibleFilter && currentResponsibleFilter !== '' && currentResponsibleFilter !== 'Todos') {
+                        shouldDisplay = shouldDisplay && (task.responsible === currentResponsibleFilter);
+                    }
+
+                    // Filtro por setor
+                    if (currentSectorFilter && currentSectorFilter !== '' && currentSectorFilter !== 'Todos') {
+                        shouldDisplay = shouldDisplay && (task.sector === currentSectorFilter);
+                    }
+
+                    if (shouldDisplay) {
+                        const taskElement = createTaskElement(task);
+                        switch (task.sector) {
+                            case 'financeiro':
+                                columnFinanceiro.appendChild(taskElement);
+                                break;
+                            case 'administrativo-geral':
+                                columnAdministrativoGeral.appendChild(taskElement);
+                                break;
+                            case 'estoque':
+                                columnEstoque.appendChild(taskElement);
+                                break;
+                            case 'estoque-pecas': // Adiciona à nova coluna
+                                columnEstoquePecas.appendChild(taskElement);
+                                break;
+                        }
                     }
                 });
 
-                // Limpa as opções existentes (mantém a opção "Todos")
-                filterResponsible.innerHTML = '<option value="">Filtrar por Responsável (Todos)</option>';
-
-                // Adiciona novas opções, ordenadas alfabeticamente
-                Array.from(responsibleNames).sort().forEach(name => {
-                    const option = document.createElement('option');
-                    option.value = name;
-                    option.textContent = name.charAt(0).toUpperCase() + name.slice(1); // Capitaliza a primeira letra para exibição
-                    filterResponsible.appendChild(option);
-                });
+                // Atualiza o filtro de responsáveis com base nas tarefas existentes
+                updateResponsibleFilter(Array.from(uniqueResponsibles));
 
             } catch (error) {
-                console.error('Erro ao popular filtro de responsáveis:', error);
+                console.error('Failed to render tasks:', error);
             }
         }
 
-        // Função para renderizar todas as tarefas nas colunas corretas com filtros
-        async function renderTasks() {
-            // Limpa todas as listas antes de renderizar
-            columnFinanceiro.innerHTML = '';
-            columnAdm.innerHTML = '';
-            columnEstoque.innerHTML = '';
-
-            try {
-                let tasks = await loadTasksDB();
-                
-                // Popula o filtro de responsáveis sempre que as tarefas são renderizadas
-                populateResponsibleFilter();
-
-                // Aplica filtro por status
-                const selectedStatus = filterStatus.value;
-                if (selectedStatus) {
-                    tasks = tasks.filter(task => task.status === selectedStatus);
+        // Função para popular o filtro de responsáveis
+        function updateResponsibleFilter(responsibles) {
+            filterResponsible.innerHTML = '<option value="">Filtrar por Responsável (Todos)</option>';
+            responsibles.forEach(responsible => {
+                if (responsible) { // Garante que não adiciona opções vazias
+                    const option = document.createElement('option');
+                    option.value = responsible;
+                    option.textContent = responsible;
+                    filterResponsible.appendChild(option);
                 }
-
-                // Aplica filtro por responsável
-                const selectedResponsible = filterResponsible.value.toLowerCase(); // Compara em minúsculas
-                if (selectedResponsible) {
-                    tasks = tasks.filter(task => task.responsible && task.responsible.toLowerCase() === selectedResponsible);
-                }
-
-                // Ordenar tarefas (por data de criação, por exemplo)
-                tasks.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-
-                tasks.forEach(task => {
-                    const taskElement = createTaskElement(task);
-                    getTaskListElementBySector(task.sector).appendChild(taskElement);
-                });
-            } catch (error) {
-                console.error('Failed to render tasks:', error);
-                alert('Erro ao carregar tarefas.');
-            }
+            });
         }
 
         // --- Funções de Drag and Drop ---
@@ -890,7 +961,9 @@
         function handleDragStart(e) {
             draggedTask = e.target;
             e.dataTransfer.setData('text/plain', e.target.dataset.id);
-            e.target.classList.add('dragging');
+            setTimeout(() => {
+                e.target.classList.add('dragging');
+            }, 0);
         }
 
         function handleDragEnd(e) {
@@ -898,67 +971,51 @@
             draggedTask = null;
         }
 
-        function handleDragOver(e) {
-            e.preventDefault();
-            const targetList = e.currentTarget.querySelector('.task-list');
-            if (targetList) {
-                targetList.classList.add('over');
-            }
-        }
+        document.querySelectorAll('.task-list').forEach(list => {
+            list.addEventListener('dragover', (e) => {
+                e.preventDefault(); // Permite o drop
+                list.classList.add('over'); // Feedback visual
+            });
 
-        function handleDragLeave(e) {
-            const targetList = e.currentTarget.querySelector('.task-list');
-            if (targetList) {
-                targetList.classList.remove('over');
-            }
-        }
+            list.addEventListener('dragleave', () => {
+                list.classList.remove('over');
+            });
 
-        async function handleDrop(e) {
-            e.preventDefault();
-            const targetList = e.currentTarget.querySelector('.task-list');
-            if (!targetList || !draggedTask) return;
+            list.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                list.classList.remove('over');
 
-            targetList.classList.remove('over');
+                const taskId = parseInt(e.dataTransfer.getData('text/plain'));
+                const targetColumn = list.closest('.task-column');
+                const newSector = targetColumn.dataset.sector;
 
-            const taskId = parseInt(e.dataTransfer.getData('text/plain'));
-            const newSector = e.currentTarget.dataset.sector;
-
-            try {
-                const tasks = await loadTasksDB();
-                const task = tasks.find(t => t.id === taskId);
-                if (task) {
-                    task.sector = newSector;
-                    await updateTaskDB(task);
-                    renderTasks(); // Re-renderiza para refletir a mudança de setor
+                if (draggedTask && draggedTask.dataset.id == taskId) {
+                    try {
+                        const tasks = await loadTasksDB();
+                        const taskToUpdate = tasks.find(t => t.id === taskId);
+                        if (taskToUpdate) {
+                            taskToUpdate.sector = newSector;
+                            await updateTaskDB(taskToUpdate);
+                            renderTasks(); // Atualiza a UI após a mudança
+                        }
+                    } catch (error) {
+                        console.error('Error updating task sector on drop:', error);
+                        alert('Erro ao mover a tarefa.');
+                    }
                 }
-            } catch (error) {
-                console.error('Failed to move task:', error);
-                alert('Erro ao mover tarefa.');
-            }
-        }
+            });
+        });
 
         // --- Event Listeners ---
-
         addTaskButton.addEventListener('click', addTask);
         filterStatus.addEventListener('change', renderTasks);
         filterResponsible.addEventListener('change', renderTasks);
+        filterSector.addEventListener('change', renderTasks); // Adiciona listener para o novo filtro de setor
 
-        // Adiciona event listeners para drag and drop nas colunas
-        document.querySelectorAll('.task-column').forEach(column => {
-            column.addEventListener('dragover', handleDragOver);
-            column.addEventListener('dragleave', handleDragLeave);
-            column.addEventListener('drop', handleDrop);
-        });
-
-        // Inicialização: Abre o banco de dados e renderiza as tarefas
-        window.addEventListener('load', async () => {
-            try {
-                await openDB();
-                renderTasks();
-            } catch (error) {
-                console.error('Failed to initialize application:', error);
-                alert('Erro ao iniciar o gerenciador de tarefas. Verifique o console para detalhes.');
-            }
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async () => {
+            await openDB();
+            renderTasks();
         });
     </script>
 </body>
